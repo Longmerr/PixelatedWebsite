@@ -197,7 +197,7 @@ catWindowClose.addEventListener("click", () => {
     catWindow.style.display = "none";
 });
 
-function makeDesktopWindow(title, className, contentClassName) {
+function makeDesktopWindow(title, className, contentClassName, resizable = true) {
     const appWindow = document.createElement("section");
     appWindow.className = `desktop-app-window ${className}`;
     appWindow.setAttribute("aria-label", title);
@@ -217,13 +217,16 @@ function makeDesktopWindow(title, className, contentClassName) {
 
     const content = document.createElement("div");
     content.className = `desktop-window-content ${contentClassName}`;
-    const resizeHandle = document.createElement("button");
-    resizeHandle.className = "window-resize-handle";
-    resizeHandle.type = "button";
-    resizeHandle.setAttribute("aria-label", `Resize ${title}`);
-    appWindow.append(titlebar, content, resizeHandle);
+    appWindow.append(titlebar, content);
+    if (resizable) {
+        const resizeHandle = document.createElement("button");
+        resizeHandle.className = "window-resize-handle";
+        resizeHandle.type = "button";
+        resizeHandle.setAttribute("aria-label", `Resize ${title}`);
+        appWindow.append(resizeHandle);
+        enableWindowResize(appWindow, resizeHandle, 180, 140);
+    }
     scene.append(appWindow);
-    enableWindowResize(appWindow, resizeHandle, 180, 140);
 
     closeButton.addEventListener("click", () => {
         playClickSound();
@@ -287,11 +290,79 @@ function makeDesktopWindow(title, className, contentClassName) {
 }
 
 const folderWindows = new Map();
+let activeVideo;
 
 document.querySelectorAll(".desktop-icon[data-folder]").forEach((folderIcon) => {
     folderIcon.addEventListener("click", () => {
         playClickSound();
         const folderName = folderIcon.dataset.folder;
+
+        if (folderName === "i want to") {
+            music.pause();
+            document.getElementById("play-pause").textContent = "▶";
+            activeVideo?.pause();
+
+            const videoWindow = makeDesktopWindow(
+                folderName,
+                "folder-app-window video-app-window",
+                "video-window-content",
+                false
+            );
+            const video = document.createElement("video");
+            activeVideo = video;
+            video.className = "video-source";
+            video.volume = 0.2;
+            video.src = "assets/i%20want%20to%20be%20your%20favorite%20boy.mp4";
+            video.autoplay = true;
+            video.playsInline = true;
+            const pixelCanvas = document.createElement("canvas");
+            pixelCanvas.className = "video-pixel-canvas";
+            pixelCanvas.setAttribute("aria-label", "Playing video");
+            const canvasContext = pixelCanvas.getContext("2d");
+            videoWindow.content.append(video, pixelCanvas);
+
+            video.addEventListener("loadedmetadata", () => {
+                pixelCanvas.width = Math.max(1, Math.round(video.videoWidth / 3.5));
+                pixelCanvas.height = Math.max(1, Math.round(video.videoHeight / 3.5));
+                canvasContext.imageSmoothingEnabled = false;
+            });
+
+            let animationFrame;
+            const drawPixelatedFrame = () => {
+                if (video.paused || video.ended) {
+                    return;
+                }
+
+                if (video.videoWidth && video.videoHeight) {
+                    const cropX = Math.round(video.videoWidth * 0.1);
+
+                    canvasContext.drawImage(
+                        video,
+                        cropX,
+                        0,
+                        video.videoWidth - cropX * 2,
+                        video.videoHeight,
+                        0,
+                        0,
+                        pixelCanvas.width,
+                        pixelCanvas.height
+                    );
+                }
+
+                animationFrame = requestAnimationFrame(drawPixelatedFrame);
+            };
+            video.addEventListener("play", drawPixelatedFrame);
+            videoWindow.appWindow.querySelector(".desktop-window-close").addEventListener("click", () => {
+                video.pause();
+                cancelAnimationFrame(animationFrame);
+                if (activeVideo === video) {
+                    activeVideo = null;
+                }
+            });
+            video.play().catch(() => { });
+            return;
+        }
+
         let folderWindow = folderWindows.get(folderName);
 
         if (!folderWindow) {
@@ -312,12 +383,6 @@ This website is literally a simple webpage for fun and to help me understand how
 
 I intent on to improve this more and more but for now it has a draw pad and a music player that it !`;
                 folderWindow.content.append(readmeContent);
-            } else {
-                folderWindow = makeDesktopWindow(folderName, "folder-app-window", "");
-                const emptyMessage = document.createElement("p");
-                emptyMessage.className = "folder-empty-message";
-                emptyMessage.textContent = "Folder 2 is empty.";
-                folderWindow.content.append(emptyMessage);
             }
             folderWindows.set(folderName, folderWindow);
         } else {
