@@ -13,7 +13,7 @@ app.use(express.json());
 
 const mailLimiter = rateLimit({
     windowMs: 60 * 1000,
-    max: 5,
+    max: 3,
     message: {
         success: false,
         message: "Too many messages. Please try again later."
