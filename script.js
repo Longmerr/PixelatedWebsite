@@ -513,7 +513,7 @@ mailIcon.addEventListener("click", () => {
             status.textContent = "Sending...";
 
             try {
-                const response = await fetch("http://localhost:3000/api/mail", {
+                const response = await fetch("https://pixelated-website-mail.onrender.com/api/mail", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
