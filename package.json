@@ -1,0 +1,28 @@
+{
+  "name": "mywebsite---copy-(2)",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Longmerr/PixelatedWebsite.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Longmerr/PixelatedWebsite/issues"
+  },
+  "homepage": "https://github.com/Longmerr/PixelatedWebsite#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.5",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "googleapis": "^182.0.0"
+  }
+}

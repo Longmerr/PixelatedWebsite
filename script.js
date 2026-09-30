@@ -22,6 +22,7 @@ const catWindowTitlebar = document.getElementById("cat-window-titlebar");
 const catWindowClose = document.getElementById("cat-window-close");
 const catWindowResize = document.getElementById("cat-window-resize");
 const notepadIcon = document.getElementById("notepad-icon");
+const mailIcon = document.getElementById("mail-icon");
 
 let currentDialogue = 0;
 let typingInterval;
@@ -458,6 +459,88 @@ notepadIcon.addEventListener("click", () => {
         });
     } else {
         notepadWindow.appWindow.style.display = "block";
+    }
+});
+
+let mailWindow;
+
+// MAILLLLLLLLLLLLLLLLLLLLLLLL
+mailIcon.addEventListener("click", () => {
+    playClickSound();
+
+    if (!mailWindow) {
+        mailWindow = makeDesktopWindow("Sent me a message!", "mail-app-window", "mail-content");
+
+        const form = document.createElement("form");
+        form.className = "mail-form";
+
+        const messageField = document.createElement("label");
+        messageField.className = "mail-field mail-message-field";
+        messageField.textContent = "Message";
+
+        const messageInput = document.createElement("textarea");
+        messageInput.name = "message";
+        messageInput.required = true;
+        messageInput.rows = 5;
+        messageField.append(messageInput);
+
+        const formFooter = document.createElement("div");
+        formFooter.className = "mail-form-footer";
+
+        const status = document.createElement("p");
+        status.className = "mail-status";
+        status.setAttribute("role", "status");
+
+        const sendButton = document.createElement("button");
+        sendButton.className = "mail-send-button";
+        sendButton.type = "submit";
+        sendButton.textContent = "Send message";
+
+        formFooter.append(status, sendButton);
+        form.append(messageField, formFooter);
+        mailWindow.content.append(form);
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const message = messageInput.value.trim();
+
+            if (!message) {
+                status.textContent = "Message cannot be empty.";
+                return;
+            }
+
+            sendButton.disabled = true;
+            status.textContent = "Sending...";
+
+            try {
+                const response = await fetch("http://localhost:3000/api/mail", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || "Failed to send message.");
+                }
+
+                status.textContent = result.message || "Message sent.";
+                messageInput.value = "";
+
+            } catch (error) {
+                status.textContent = "An error occurred while sending the message.";
+            } finally {
+                sendButton.disabled = false;
+                status.textContent = status.textContent || "Message sent.";
+            }
+        });
+    } else {
+        mailWindow.appWindow.style.display = "block";
     }
 });
 
