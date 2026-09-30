@@ -1,7 +1,8 @@
-require("dotenv").config();
+require("dotenv").config({ path: "./server/.env" });
 
 const express = require("express");
 const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const { google } = require("googleapis");
 
 const app = express();
@@ -9,6 +10,17 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+const mailLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 5,
+    message: {
+        success: false,
+        message: "Too many messages. Please try again later."
+    },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -26,7 +38,7 @@ const gmail = google.gmail({
     auth: oauth2Client
 });
 
-app.post("/api/mail", async (req, res) => {
+app.post("/api/mail",mailLimiter, async (req, res) => {
     const { message } = req.body;
 
     if (!message || !message.trim()) {
