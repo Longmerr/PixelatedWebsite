@@ -1,28 +1,14 @@
-const rateLimit = require("express-rate-limit");
-const path = require("path");
-require("dotenv").config({
-    path: path.join(__dirname, ".env")
-});
+require("dotenv").config();
 
 const express = require("express");
 const cors = require("cors");
 const { google } = require("googleapis");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-const mailLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: {
-        success: false,
-        message: "Too many messages. Please try again later."
-    }
-});
-
-app.use("/api/mail", mailLimiter);
 
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
@@ -30,34 +16,14 @@ const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_REDIRECT_URI
 );
 
-const SCOPES = [
-    "https://www.googleapis.com/auth/gmail.send"
-];
-
-app.get("/auth", (req, res) => {
-    const authUrl = oauth2Client.generateAuthUrl({
-        access_type: "offline",
-        scope: SCOPES,
-        prompt: "consent"
-    });
-
-    res.redirect(authUrl);
+// Use the refresh token obtained during Google authorization
+oauth2Client.setCredentials({
+    refresh_token: process.env.GOOGLE_REFRESH_TOKEN
 });
 
-app.get("/oauth2callback", async (req, res) => {
-    try {
-        const { code } = req.query;
-
-        const { tokens } = await oauth2Client.getToken(code);
-
-        console.log("Google authorization successful.");
-        console.log(tokens);
-
-        res.send("Google authorization successful! Check the VS Code terminal.");
-    } catch (error) {
-        console.error("OAuth error:", error);
-        res.status(500).send("Google authorization failed.");
-    }
+const gmail = google.gmail({
+    version: "v1",
+    auth: oauth2Client
 });
 
 app.post("/api/mail", async (req, res) => {
@@ -70,35 +36,17 @@ app.post("/api/mail", async (req, res) => {
         });
     }
 
-    if (message.length > 2000) {
-    return res.status(400).json({
-        success: false,
-        message: "Message is too long."
-    });
-}
-
     try {
-        oauth2Client.setCredentials({
-            refresh_token: process.env.GOOGLE_REFRESH_TOKEN
-        });
-
-        const gmail = google.gmail({
-            version: "v1",
-            auth: oauth2Client
-        });
-
-        const emailLines = [
-            "From: me",
+        const email = [
             "To: phanlong795@gmail.com",
-            "Subject: New message from my website",
+            "Subject: New message from website",
+            "Content-Type: text/plain; charset=utf-8",
             "",
             message.trim()
-        ];
-
-        const rawMessage = emailLines.join("\r\n");
+        ].join("\r\n");
 
         const encodedMessage = Buffer
-            .from(rawMessage)
+            .from(email)
             .toString("base64url");
 
         await gmail.users.messages.send({
@@ -108,7 +56,7 @@ app.post("/api/mail", async (req, res) => {
             }
         });
 
-        console.log("Email sent successfully.");
+        console.log("New message sent to Gmail.");
 
         res.json({
             success: true,
@@ -116,10 +64,7 @@ app.post("/api/mail", async (req, res) => {
         });
 
     } catch (error) {
-        console.error(
-            "Gmail error:",
-            error.response?.data || error.message || error
-        );
+        console.error("Gmail error:", error);
 
         res.status(500).json({
             success: false,
@@ -129,5 +74,5 @@ app.post("/api/mail", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
