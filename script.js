@@ -482,6 +482,7 @@ mailIcon.addEventListener("click", () => {
         messageInput.name = "message";
         messageInput.required = true;
         messageInput.rows = 5;
+        messageInput.maxLength = 2000;
         messageField.append(messageInput);
 
         const formFooter = document.createElement("div");

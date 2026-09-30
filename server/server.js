@@ -38,13 +38,20 @@ const gmail = google.gmail({
     auth: oauth2Client
 });
 
-app.post("/api/mail",mailLimiter, async (req, res) => {
+app.post("/api/mail", mailLimiter, async (req, res) => {
     const { message } = req.body;
 
     if (!message || !message.trim()) {
         return res.status(400).json({
             success: false,
             message: "Message cannot be empty."
+        });
+    }
+
+    if (message.length > 2000) {
+        return res.status(400).json({
+            success: false,
+            message: "Message is too long. Maximum 2000 characters."
         });
     }
 
