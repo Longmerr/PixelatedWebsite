@@ -503,6 +503,7 @@ mailIcon.addEventListener("click", () => {
 
         form.addEventListener("submit", async (event) => {
             event.preventDefault();
+
             const message = messageInput.value.trim();
 
             if (!message) {
@@ -511,7 +512,30 @@ mailIcon.addEventListener("click", () => {
             }
 
             sendButton.disabled = true;
-            status.textContent = "Sending...";
+            status.textContent = "Sending... please wait...";
+
+            const startTime = Date.now();
+
+            const timer = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const seconds = Math.floor(elapsed / 1000);
+
+                if (seconds < 5) {
+                    status.textContent = "Sending... please wait...";
+                }
+                else if (seconds < 10) {
+                    status.textContent = "Still sending... please wait...";
+                }
+                else if (seconds < 20) {
+                    status.textContent = "This is taking a little longer than expected...";
+                }
+                else if (seconds < 30) {
+                    status.textContent = "Right now, the bird is preparing to fly so PLEASE WAIT";
+                }
+                else {
+                    status.textContent = "This took about 30 to 50 second so BE PAITENT";
+                }
+            }, 1000);
 
             try {
                 const response = await fetch("https://pixelated-website-mail.onrender.com/api/mail", {
@@ -535,9 +559,10 @@ mailIcon.addEventListener("click", () => {
 
             } catch (error) {
                 status.textContent = "An error occurred while sending the message.";
+
             } finally {
+                clearInterval(timer);
                 sendButton.disabled = false;
-                status.textContent = status.textContent || "Message sent.";
             }
         });
     } else {
